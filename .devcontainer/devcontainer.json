@@ -1,0 +1,17 @@
+{
+  "name": "Rust OpenAI Compatible Chat API",
+  "image": "mcr.microsoft.com/devcontainers/rust:1-1",
+  "features": {
+    "git": "latest",
+    "rust": "latest"
+  },
+  "postCreateCommand": "cargo fetch",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "vadimcn.vscode-lldb"
+      ]
+    }
+  }
+}
