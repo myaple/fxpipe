@@ -1,0 +1,9 @@
+FROM registry.access.redhat.com/ubi9/ubi
+
+# Copy your Rust binary (adjust as needed)
+COPY target/release/fxpipe /usr/local/bin/fxpipe
+
+# Expose port (adjust if your server listens on a different port)
+EXPOSE 3000
+
+ENTRYPOINT ["/usr/local/bin/fxpipe"]

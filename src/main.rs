@@ -1,27 +1,36 @@
-use poem::{get, handler, listener::TcpListener, post, Route, Server};
-use poem::web::Json;
-use serde::{Serialize, Deserialize};
+mod function_extractor;
+mod handlers;
+mod llm_client;
+mod routes;
 
-#[derive(Serialize)]
+use poem::web::Json;
+use poem::{Route, Server, get, handler, listener::TcpListener, post};
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
 struct ModelsResponse {
-    data: Vec<Model>
+    data: Vec<Model>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct Model {
     id: String,
 }
 
 #[handler]
-async fn get_models() -> Json<ModelsResponse> {
+pub async fn get_models() -> Json<ModelsResponse> {
     let models = vec![
-        Model { id: "gpt-4".to_string() },
-        Model { id: "gpt-3.5-turbo".to_string() },
+        Model {
+            id: "gpt-4".to_string(),
+        },
+        Model {
+            id: "gpt-3.5-turbo".to_string(),
+        },
     ];
     Json(ModelsResponse { data: models })
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct ChatCompletionRequest {
     // This should match the OpenAI chat completion request structure.
     // For now, accept a minimal structure for demonstration
@@ -29,7 +38,7 @@ struct ChatCompletionRequest {
     messages: Vec<Message>,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct Message {
     role: String,
     content: String,
