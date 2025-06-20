@@ -1,0 +1,57 @@
+Plan for OpenAI-Compatible Chat Completion Service
+===============================================
+
+Overview:
+-----------
+We are building an OpenAI-compatible web API in Rust. The service will expose two endpoints:
+
+1. GET /v1/models: Returns a list of available models (likely static for now).
+2. POST /v1/chat/completions: Accepts a chat completion request, forwards it to an upstream LLM endpoint (also OpenAI compatible), extracts and refines function calls from the returned response, and then sends the processed response back to the user.
+
+Goals:
+--------
+- Increase the reliability of function calling by modifying the prompt before sending to the LLM, parsing function calls from the returned text, and formatting them correctly.
+- Support and validate the chat completion request and responses to match the OpenAI API schema.
+
+Project Structure:
+------------------
+- Cargo.toml: Define dependencies (actix-web, serde, serde_json, reqwest, log, env_logger).
+- src/main.rs: Entry point to set up and run the web server.
+- src/routes/mod.rs: Define HTTP routes (/v1/models and /v1/chat/completions).
+- src/handlers.rs: Implement request handling logic:
+    * For /v1/models, return a static list of supported models.
+    * For /v1/chat/completions, parse the chat payload, modify the prompt to enhance function call reliability, forward the request to the upstream LLM endpoint, and then process/validate the returned function calls.
+- src/llm_client.rs: Module to handle HTTP calls to the upstream LLM endpoint using reqwest.
+- src/function_extractor.rs: Module to parse and extract function calls from the LLM response. This may include regex-based extraction and additional error handling for errant responses.
+
+Implementation Steps:
+---------------------
+1. Initialize a new Cargo binary project if not already initialized.
+2. Update Cargo.toml with the necessary dependencies:
+   - actix-web (for the web server)
+   - serde and serde_json (for JSON serialization/deserialization)
+   - reqwest (to call the upstream LLM endpoint)
+   - log and env_logger (for logging and debugging)
+3. Implement the /v1/models endpoint:
+   - Return a hard-coded list of models for initial testing, e.g., ["gpt-4", "gpt-3.5-turbo"].
+4. Implement the /v1/chat/completions endpoint:
+   - Accept and parse chat completion JSON payload.
+   - Modify the prompt by appending instructions to increase function call reliability.
+   - Use reqwest to forward the modified payload to the upstream LLM endpoint.
+   - Upon receiving the LLM response, extract the function calls using a dedicated function_extractor module.
+   - Perform any correction needed to format function calls properly before responding to the client.
+5. Add robust error handling:
+   - Validate inputs and outputs at each step
+   - Handle errors from the upstream LLM call gracefully
+   - Log detailed error information
+6. Write unit/integration tests for the endpoints and function call extraction logic.
+
+Future Enhancements:
+---------------------
+- Improve robustness of function extraction with more advanced parsing or even ML-based approaches.
+- Expand API coverage to support additional OpenAI API endpoints.
+- Add rate limiting, logging improvements, and more configuration options for production.
+
+Conclusion:
+-----------
+This plan provides a roadmap to build an OpenAI compatible chat completion API in Rust that intelligently manages function call reliability. The next steps include implementing the basic endpoints and iterating based on test feedback.
