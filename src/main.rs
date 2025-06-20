@@ -2,6 +2,11 @@ mod function_extractor;
 mod handlers;
 mod llm_client;
 mod routes;
+mod config;
+
+use crate::config::AppConfig;
+use log::{info, error};
+use std::process;
 
 use poem::web::Json;
 use poem::{Route, Server, get, handler, listener::TcpListener, post};
@@ -21,10 +26,7 @@ struct Model {
 pub async fn get_models() -> Json<ModelsResponse> {
     let models = vec![
         Model {
-            id: "gpt-4".to_string(),
-        },
-        Model {
-            id: "gpt-3.5-turbo".to_string(),
+            id: "fx-small".to_string(),
         },
     ];
     Json(ModelsResponse { data: models })
@@ -82,13 +84,28 @@ async fn chat_completions(Json(_req): Json<ChatCompletionRequest>) -> Json<ChatC
     Json(response)
 }
 
+
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
+    env_logger::init();
+
+    let config = match AppConfig::from_env() {
+        Ok(cfg) => cfg,
+        Err(e) => {
+            error!("Failed to load configuration: {}", e);
+            process::exit(1);
+        }
+    };
+
     let app = Route::new()
         .at("/v1/models", get(get_models))
         .at("/v1/chat/completions", post(chat_completions));
 
-    let listener = TcpListener::bind("127.0.0.1:3000");
-    println!("Starting server at http://127.0.0.1:3000");
+    let bind_addr = format!("{}:{}", config.host, config.port);
+    let listener = TcpListener::bind(bind_addr.clone());
+
+    info!("Starting server at http://{}", bind_addr);
+
     Server::new(listener).run(app).await
 }
+

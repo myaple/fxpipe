@@ -1,0 +1,27 @@
+use serde::Deserialize;
+use config::{Config, ConfigError, Environment, File};
+
+#[derive(Debug, Deserialize)]
+pub struct LlmConfig {
+    pub endpoint: String,
+    pub api_key: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AppConfig {
+    pub model_name: String,
+    pub host: String,
+    pub port: u16,
+    pub llm_config: LlmConfig,
+}
+
+impl AppConfig {
+    pub fn from_env() -> Result<Self, ConfigError> {
+        let s = Config::builder()
+            .add_source(File::with_name("config").required(false))
+            .add_source(Environment::with_prefix("APP").separator("_"))
+            .build()?;
+
+        s.try_deserialize()
+    }
+}

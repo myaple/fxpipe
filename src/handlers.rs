@@ -20,7 +20,7 @@ mod tests {
         assert_eq!(resp.status(), 200);
         let body = resp.into_body().into_bytes().await.unwrap();
         let models_resp: ModelsResponse = serde_json::from_slice(&body).unwrap();
-        assert!(models_resp.data.iter().any(|m| m.id == "gpt-4"));
+        assert!(models_resp.data.iter().any(|m| m.id == "fx-small"));
     }
 
     #[tokio::test]
