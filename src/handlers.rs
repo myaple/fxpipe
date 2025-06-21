@@ -1,8 +1,65 @@
+use crate::models::{ModelsResponse, Model, ChatCompletionRequest, Message, ChatCompletionResponse, Choice, MessageResponse};
+use crate::llm_client::call_upstream_llm;
+use crate::config::AppConfig;
+use poem::{handler, web::Json};
+
+#[handler]
+pub async fn get_models() -> Json<ModelsResponse> {
+    let models = vec![Model {
+        id: "fx-small".to_string(),
+    }];
+    Json(ModelsResponse { data: models })
+}
+
+#[handler]
+pub async fn chat_completions(Json(req): Json<ChatCompletionRequest>) -> Json<ChatCompletionResponse> {
+    let config = match AppConfig::from_env() {
+        Ok(cfg) => cfg,
+        Err(_) => {
+            return Json(ChatCompletionResponse {
+                id: "error".to_string(),
+                object: "error".to_string(),
+                created: 0,
+                choices: vec![],
+            });
+        }
+    };
+
+    let payload = serde_json::to_string(&req).unwrap_or_else(|_| "{}".to_string());
+
+    // Call the upstream LLM with the configured LLM config
+    let result = call_upstream_llm(&payload, &config.llm_config).await;
+
+    match result {
+        Ok(text) => {
+            // Simplified response: just echo the raw response text in content field
+            Json(ChatCompletionResponse {
+                id: "chatcmpl-123".to_string(),
+                object: "chat.completion".to_string(),
+                created: 0,
+                choices: vec![Choice {
+                    index: 0,
+                    message: MessageResponse {
+                        role: "assistant".to_string(),
+                        content: text,
+                    },
+                }],
+            })
+        }
+        Err(_) => Json(ChatCompletionResponse {
+            id: "error".to_string(),
+            object: "error".to_string(),
+            created: 0,
+            choices: vec![],
+        }),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ModelsResponse;
-    use crate::{ChatCompletionRequest, Message};
+    use crate::models::ModelsResponse;
+    use crate::models::{ChatCompletionRequest, Message};
     use poem::http::Method;
     use poem::http::Uri;
     use poem::Endpoint;
