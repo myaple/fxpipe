@@ -3,9 +3,9 @@ mod tests {
     use super::*;
     use crate::ModelsResponse;
     use crate::{ChatCompletionRequest, Message};
-    use poem::Endpoint;
     use poem::http::Method;
     use poem::http::Uri;
+    use poem::Endpoint;
     use poem::{Route, Server};
     use serde_json::json;
 
@@ -44,12 +44,10 @@ mod tests {
 
         let body = resp.into_body().into_bytes().await.unwrap();
         let resp_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
-        assert!(
-            resp_json["id"]
-                .as_str()
-                .unwrap_or("")
-                .starts_with("chatcmpl")
-        );
+        assert!(resp_json["id"]
+            .as_str()
+            .unwrap_or("")
+            .starts_with("chatcmpl"));
         assert!(resp_json["choices"].is_array());
     }
 

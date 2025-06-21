@@ -1,15 +1,15 @@
+mod config;
 mod function_extractor;
 mod handlers;
 mod llm_client;
 mod routes;
-mod config;
 
 use crate::config::AppConfig;
-use log::{info, error};
+use log::{error, info};
 use std::process;
 
 use poem::web::Json;
-use poem::{Route, Server, get, handler, listener::TcpListener, post};
+use poem::{get, handler, listener::TcpListener, post, Route, Server};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -24,11 +24,9 @@ struct Model {
 
 #[handler]
 pub async fn get_models() -> Json<ModelsResponse> {
-    let models = vec![
-        Model {
-            id: "fx-small".to_string(),
-        },
-    ];
+    let models = vec![Model {
+        id: "fx-small".to_string(),
+    }];
     Json(ModelsResponse { data: models })
 }
 
@@ -66,24 +64,51 @@ struct MessageResponse {
     content: String,
 }
 
-#[handler]
-async fn chat_completions(Json(_req): Json<ChatCompletionRequest>) -> Json<ChatCompletionResponse> {
-    // Stub implementation: respond with a fixed response for now
-    let response = ChatCompletionResponse {
-        id: "chatcmpl-123".to_string(),
-        object: "chat.completion".to_string(),
-        created: 1234567890,
-        choices: vec![Choice {
-            index: 0,
-            message: MessageResponse {
-                role: "assistant".to_string(),
-                content: "This is a stub response.".to_string(),
-            },
-        }],
-    };
-    Json(response)
-}
+use crate::llm_client::call_upstream_llm;
 
+#[handler]
+async fn chat_completions(Json(req): Json<ChatCompletionRequest>) -> Json<ChatCompletionResponse> {
+    let config = match AppConfig::from_env() {
+        Ok(cfg) => cfg,
+        Err(_) => {
+            return Json(ChatCompletionResponse {
+                id: "error".to_string(),
+                object: "error".to_string(),
+                created: 0,
+                choices: vec![],
+            });
+        }
+    };
+
+    let payload = serde_json::to_string(&req).unwrap_or_else(|_| "{}".to_string());
+
+    // Call the upstream LLM with the configured LLM config
+    let result = call_upstream_llm(&payload, &config.llm_config).await;
+
+    match result {
+        Ok(text) => {
+            // Simplified response: just echo the raw response text in content field
+            Json(ChatCompletionResponse {
+                id: "chatcmpl-123".to_string(),
+                object: "chat.completion".to_string(),
+                created: 0,
+                choices: vec![Choice {
+                    index: 0,
+                    message: MessageResponse {
+                        role: "assistant".to_string(),
+                        content: text,
+                    },
+                }],
+            })
+        }
+        Err(_) => Json(ChatCompletionResponse {
+            id: "error".to_string(),
+            object: "error".to_string(),
+            created: 0,
+            choices: vec![],
+        }),
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
@@ -108,4 +133,3 @@ async fn main() -> Result<(), std::io::Error> {
 
     Server::new(listener).run(app).await
 }
-

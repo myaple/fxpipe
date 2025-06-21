@@ -1,5 +1,5 @@
-use serde::Deserialize;
 use config::{Config, ConfigError, Environment, File};
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct LlmConfig {

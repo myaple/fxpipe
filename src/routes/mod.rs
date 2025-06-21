@@ -1,5 +1,5 @@
 use crate::{chat_completions, get_models};
-use poem::{Route, get, post};
+use poem::{get, post, Route};
 
 pub fn create_routes() -> Route {
     Route::new()
