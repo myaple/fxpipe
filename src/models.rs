@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use poem::web::Json;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct ModelsResponse {

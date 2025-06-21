@@ -8,9 +8,9 @@ mod routes;
 use crate::config::AppConfig;
 use crate::routes::create_routes;
 use log::{error, info};
-use std::process;
 use poem::listener::TcpListener;
 use poem::Server;
+use std::process;
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
@@ -24,9 +24,8 @@ async fn main() -> Result<(), std::io::Error> {
         }
     };
 
-    let app = create_routes();
-
     let bind_addr = format!("{}:{}", config.host, config.port);
+    let app = create_routes(config);
     let listener = TcpListener::bind(bind_addr.clone());
 
     info!("Starting server at http://{}", bind_addr);

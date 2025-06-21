@@ -1,7 +1,12 @@
-use crate::models::{ModelsResponse, Model, ChatCompletionRequest, Message, ChatCompletionResponse, Choice, MessageResponse};
-use crate::llm_client::call_upstream_llm;
 use crate::config::AppConfig;
-use poem::{handler, web::Json};
+use crate::llm_client::call_upstream_llm;
+use crate::models::{
+    ChatCompletionRequest, ChatCompletionResponse, Choice, MessageResponse, Model, ModelsResponse,
+};
+use poem::{
+    handler,
+    web::{Data, Json},
+};
 
 #[handler]
 pub async fn get_models() -> Json<ModelsResponse> {
@@ -12,19 +17,10 @@ pub async fn get_models() -> Json<ModelsResponse> {
 }
 
 #[handler]
-pub async fn chat_completions(Json(req): Json<ChatCompletionRequest>) -> Json<ChatCompletionResponse> {
-    let config = match AppConfig::from_env() {
-        Ok(cfg) => cfg,
-        Err(_) => {
-            return Json(ChatCompletionResponse {
-                id: "error".to_string(),
-                object: "error".to_string(),
-                created: 0,
-                choices: vec![],
-            });
-        }
-    };
-
+pub async fn chat_completions(
+    Data(config): Data<&AppConfig>,
+    Json(req): Json<ChatCompletionRequest>,
+) -> Json<ChatCompletionResponse> {
     let payload = serde_json::to_string(&req).unwrap_or_else(|_| "{}".to_string());
 
     // Call the upstream LLM with the configured LLM config
@@ -58,6 +54,7 @@ pub async fn chat_completions(Json(req): Json<ChatCompletionRequest>) -> Json<Ch
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::{AppConfig, LlmConfig};
     use crate::models::ModelsResponse;
     use crate::models::{ChatCompletionRequest, Message};
     use poem::http::Method;
@@ -68,7 +65,17 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_models() {
-        let app = crate::routes::create_routes();
+        let mock_config = AppConfig {
+            model_name: "test-model".to_string(),
+            host: "0.0.0.0".to_string(),
+            port: 0,
+            llm_config: LlmConfig {
+                endpoint: "http://example.com".to_string(),
+                api_key: None,
+            },
+        };
+        let app = crate::routes::create_routes(mock_config);
+
         let req = poem::Request::builder()
             .method(Method::GET)
             .uri(Uri::from_static("/v1/models"))
@@ -82,7 +89,17 @@ mod tests {
 
     #[tokio::test]
     async fn test_chat_completions_stub() {
-        let app = crate::routes::create_routes();
+        let mock_config = AppConfig {
+            model_name: "test-model".to_string(),
+            host: "0.0.0.0".to_string(),
+            port: 0,
+            llm_config: LlmConfig {
+                endpoint: "http://example.com".to_string(),
+                api_key: None,
+            },
+        };
+        let app = crate::routes::create_routes(mock_config);
+
         let req_payload = ChatCompletionRequest {
             model: "gpt-4".to_string(),
             messages: vec![Message {
