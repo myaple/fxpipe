@@ -91,7 +91,7 @@ mod tests {
                 passthrough_model_name: "backend-model".to_string(),
             },
         };
-        let app = crate::routes::create_routes(mock_config);
+        let app = crate::routes::create_routes(&mock_config);
 
         let req = Request::builder()
             .method(Method::GET)
@@ -114,7 +114,7 @@ mod tests {
                 passthrough_model_name: "backend-model".to_string(),
             },
         };
-        let app = crate::routes::create_routes(mock_config);
+        let app = crate::routes::create_routes(&mock_config);
 
         let req_payload = ChatCompletionRequest {
             model: "gpt-4".to_string(),

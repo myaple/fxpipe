@@ -11,8 +11,11 @@ use routes::create_routes;
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
     let config = crate::config::AppConfig::from_env().unwrap();
-    let app = create_routes(config);
-    Server::new(TcpListener::bind("0.0.0.0:3000"))
-        .run(app)
-        .await
+    let app = create_routes(&config);
+    Server::new(TcpListener::bind(format!(
+        "{}:{}",
+        config.host, config.port
+    )))
+    .run(app)
+    .await
 }
