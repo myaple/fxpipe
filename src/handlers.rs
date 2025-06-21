@@ -21,9 +21,12 @@ pub struct Api;
 #[OpenApi]
 impl Api {
     #[oai(path = "/v1/models", method = "get")]
-    async fn get_models(&self) -> Result<CustomResponse, poem::Error> {
+    async fn get_models(
+        &self,
+        Data(config): Data<&AppConfig>,
+    ) -> Result<CustomResponse, poem::Error> {
         let models = vec![Model {
-            id: "fx-small".to_string(),
+            id: config.exposed_model_name.clone(),
         }];
         Ok(CustomResponse::Success(Json(json!(ModelsResponse {
             data: models
@@ -66,7 +69,7 @@ mod tests {
     use crate::config::{AppConfig, LlmConfig};
     use crate::models::{ChatCompletionRequest, Message};
     use poem::http::{Method, Uri};
-    use poem::{Body, Endpoint, Request};
+    use poem::{Endpoint, Request};
 
     async fn get_response_body(resp: impl poem::IntoResponse) -> String {
         resp.into_response()
@@ -79,12 +82,13 @@ mod tests {
     #[tokio::test]
     async fn test_get_models() {
         let mock_config = AppConfig {
-            model_name: "test-model".to_string(),
+            exposed_model_name: "test-model".to_string(),
             host: "0.0.0.0".to_string(),
             port: 0,
             llm_config: LlmConfig {
                 endpoint: "http://example.com".to_string(),
                 api_key: None,
+                passthrough_model_name: "backend-model".to_string(),
             },
         };
         let app = crate::routes::create_routes(mock_config);
@@ -95,18 +99,19 @@ mod tests {
             .finish();
         let resp = app.call(req).await.unwrap();
         let body = get_response_body(resp).await;
-        assert!(body.contains("fx-small"));
+        assert!(body.contains("test-model"));
     }
 
     #[tokio::test]
     async fn test_chat_completions_stub() {
         let mock_config = AppConfig {
-            model_name: "test-model".to_string(),
+            exposed_model_name: "test-model".to_string(),
             host: "0.0.0.0".to_string(),
             port: 0,
             llm_config: LlmConfig {
                 endpoint: "http://example.com".to_string(),
                 api_key: None,
+                passthrough_model_name: "backend-model".to_string(),
             },
         };
         let app = crate::routes::create_routes(mock_config);

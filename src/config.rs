@@ -5,11 +5,12 @@ use serde::Deserialize;
 pub struct LlmConfig {
     pub endpoint: String,
     pub api_key: Option<String>,
+    pub passthrough_model_name: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct AppConfig {
-    pub model_name: String,
+    pub exposed_model_name: String,
     pub host: String,
     pub port: u16,
     pub llm_config: LlmConfig,
