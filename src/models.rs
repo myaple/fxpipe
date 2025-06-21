@@ -39,7 +39,7 @@ pub struct Choice {
     pub message: MessageResponse,
 }
 
-#[derive(Serialize, Object)]
+#[derive(Serialize, Deserialize, Object)]
 pub struct MessageResponse {
     pub role: String,
     pub content: String,

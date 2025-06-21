@@ -1,4 +1,5 @@
 use crate::config::AppConfig;
+use crate::function_extractor::extract_function_calls;
 use crate::llm_client::call_upstream_llm;
 use crate::models::{
     ChatCompletionRequest, ChatCompletionResponse, Choice, MessageResponse, Model, ModelsResponse,
@@ -43,8 +44,8 @@ impl Api {
         let result = call_upstream_llm(&payload, &config.llm_config).await;
 
         match result {
-            Ok(text) => Ok(CustomResponse::Success(Json(json!(
-                ChatCompletionResponse {
+            Ok(text) => {
+                let mut response = ChatCompletionResponse {
                     id: "chatcmpl-123".to_string(),
                     object: "chat.completion".to_string(),
                     created: 0,
@@ -52,11 +53,31 @@ impl Api {
                         index: 0,
                         message: MessageResponse {
                             role: "assistant".to_string(),
-                            content: text,
+                            content: text.clone(),
                         },
                     }],
+                };
+
+                // Process each choice to extract function calls
+                for choice in &mut response.choices {
+                    if let content = &choice.message.content {
+                        match extract_function_calls(content) {
+                            Ok(extracted) => {
+                                // If we got a JSON string different from original content
+                                if extracted != *content {
+                                    if let Ok(function_call) = serde_json::from_str::<MessageResponse>(&extracted) {
+                                        // Convert to proper function call message
+                                        choice.message = function_call;
+                                    }
+                                }
+                            }
+                            Err(e) => log::error!("Function extraction failed: {}", e),
+                        }
+                    }
                 }
-            )))),
+
+                Ok(CustomResponse::Success(Json(json!(response))))
+            }
             Err(e) => Ok(CustomResponse::BadRequest(Json(
                 json!({ "error": e.to_string() }),
             ))),
