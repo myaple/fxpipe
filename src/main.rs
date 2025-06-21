@@ -1,8 +1,8 @@
 use poem::{listener::TcpListener, Server};
 
 mod config;
-mod handlers;
 mod function_extractor;
+mod handlers;
 mod llm_client;
 mod models;
 mod routes;

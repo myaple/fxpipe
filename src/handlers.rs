@@ -60,19 +60,20 @@ impl Api {
 
                 // Process each choice to extract function calls
                 for choice in &mut response.choices {
-                    if let content = &choice.message.content {
-                        match extract_function_calls(content) {
-                            Ok(extracted) => {
-                                // If we got a JSON string different from original content
-                                if extracted != *content {
-                                    if let Ok(function_call) = serde_json::from_str::<MessageResponse>(&extracted) {
-                                        // Convert to proper function call message
-                                        choice.message = function_call;
-                                    }
+                    let content = &choice.message.content;
+                    match extract_function_calls(content) {
+                        Ok(extracted) => {
+                            // If we got a JSON string different from original content
+                            if extracted != *content {
+                                if let Ok(function_call) =
+                                    serde_json::from_str::<MessageResponse>(&extracted)
+                                {
+                                    // Convert to proper function call message
+                                    choice.message = function_call;
                                 }
                             }
-                            Err(e) => log::error!("Function extraction failed: {}", e),
                         }
+                        Err(e) => log::error!("Function extraction failed: {}", e),
                     }
                 }
 
