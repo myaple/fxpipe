@@ -19,7 +19,7 @@ impl AppConfig {
     pub fn from_env() -> Result<Self, ConfigError> {
         let s = Config::builder()
             .add_source(File::with_name("config").required(false))
-            .add_source(Environment::with_prefix("APP").separator("_"))
+            .add_source(Environment::with_prefix("FXPIPE").separator("_"))
             .build()?;
 
         s.try_deserialize()

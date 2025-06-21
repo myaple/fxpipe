@@ -1,9 +1,11 @@
 use crate::config::AppConfig;
 use crate::llm_client::call_upstream_llm;
-use crate::models::{ChatCompletionRequest, ChatCompletionResponse, Choice, MessageResponse, Model, ModelsResponse};
+use crate::models::{
+    ChatCompletionRequest, ChatCompletionResponse, Choice, MessageResponse, Model, ModelsResponse,
+};
 use poem::web::Data;
-use poem_openapi::{OpenApi, payload::Json, ApiResponse};
-use serde_json::{Value, json};
+use poem_openapi::{payload::Json, ApiResponse, OpenApi};
+use serde_json::{json, Value};
 
 #[derive(ApiResponse)]
 enum CustomResponse {
@@ -20,8 +22,12 @@ pub struct Api;
 impl Api {
     #[oai(path = "/v1/models", method = "get")]
     async fn get_models(&self) -> Result<CustomResponse, poem::Error> {
-        let models = vec![Model { id: "fx-small".to_string() }];
-        Ok(CustomResponse::Success(Json(json!(ModelsResponse { data: models }))))
+        let models = vec![Model {
+            id: "fx-small".to_string(),
+        }];
+        Ok(CustomResponse::Success(Json(json!(ModelsResponse {
+            data: models
+        }))))
     }
 
     #[oai(path = "/v1/chat/completions", method = "post")]
@@ -34,19 +40,23 @@ impl Api {
         let result = call_upstream_llm(&payload, &config.llm_config).await;
 
         match result {
-            Ok(text) => Ok(CustomResponse::Success(Json(json!(ChatCompletionResponse {
-                id: "chatcmpl-123".to_string(),
-                object: "chat.completion".to_string(),
-                created: 0,
-                choices: vec![Choice {
-                    index: 0,
-                    message: MessageResponse {
-                        role: "assistant".to_string(),
-                        content: text,
-                    },
-                }],
-            })))),
-            Err(e) => Ok(CustomResponse::BadRequest(Json(json!({ "error": e.to_string() })))),
+            Ok(text) => Ok(CustomResponse::Success(Json(json!(
+                ChatCompletionResponse {
+                    id: "chatcmpl-123".to_string(),
+                    object: "chat.completion".to_string(),
+                    created: 0,
+                    choices: vec![Choice {
+                        index: 0,
+                        message: MessageResponse {
+                            role: "assistant".to_string(),
+                            content: text,
+                        },
+                    }],
+                }
+            )))),
+            Err(e) => Ok(CustomResponse::BadRequest(Json(
+                json!({ "error": e.to_string() }),
+            ))),
         }
     }
 }
@@ -56,10 +66,14 @@ mod tests {
     use crate::config::{AppConfig, LlmConfig};
     use crate::models::{ChatCompletionRequest, Message};
     use poem::http::{Method, Uri};
-    use poem::{Request, Endpoint, Body};
+    use poem::{Body, Endpoint, Request};
 
     async fn get_response_body(resp: impl poem::IntoResponse) -> String {
-        resp.into_response().into_body().into_string().await.unwrap()
+        resp.into_response()
+            .into_body()
+            .into_string()
+            .await
+            .unwrap()
     }
 
     #[tokio::test]
